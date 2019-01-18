@@ -45,8 +45,63 @@ public class DBAuthService implements AuthService {
 
         return null;
     }
+
+    @Override
+    public void changeNickname(String oldNick, String newNick) {
+        try {
+            connection = DriverManager.getConnection("jdbc:sqlite:chatDB.sqlite");
+            preparedStatement = connection.prepareStatement("UPDATE users SET nickname=? WHERE nickname=?");
+
+            preparedStatement.setString(1, newNick);
+            preparedStatement.setString(2, oldNick);
+
+            preparedStatement.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
 }
 
 // changes from Server.java
 - authService = new SimpleAuthService();
 + authService = new DBAuthService();
+
+// ClientHandler.java во втором while добавлено
+if(msg.startsWith("/chnick")) {
+    String[] tokens = msg.split("\\s", 3);
+    if (nickname.equals(tokens[1])) {
+        server.getAuthService().changeNickname(nickname, tokens[2]);
+        nickname = tokens[2];
+        server.unsubscribe(this);
+        server.subscribe(this);
+    }
+}
+
+// На стороне клиента
+// main.fxml
+<HBox fx:id="menuPanel">
+    <MenuBar>
+        <Menu text="Правка">
+            <MenuItem text="Изменить ник" onAction="#changeNickname"/>
+        </Menu>
+    </MenuBar>
+</HBox>
+
+// Controller.java
+public void changeNickname(ActionEvent actionEvent) {
+    TextInputDialog inputDialog = new TextInputDialog(nickname);
+    inputDialog.setTitle("Смена никнейма");
+    inputDialog.setHeaderText("Введите новый никнейм");
+    inputDialog.setContentText("Никнейм");
+
+    Optional<String> result = inputDialog.showAndWait();
+
+    result.ifPresent(nick -> {
+        if (!nick.equals(nickname))
+            Network.sendMsg("/chnickname " + nickname + " " + nick);
+    });
+}
+
++ в setAuthenticated
+menuPanel.setVisible(authenticated);
+menuPanel.setManaged(authenticated);
