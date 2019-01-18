@@ -1,0 +1,52 @@
+// DBAuthService.java
+package com.geekbrains.server;
+
+import java.sql.*;
+
+public class DBAuthService implements AuthService {
+    private Connection connection;
+    private PreparedStatement preparedStatement;
+
+    public DBAuthService() {
+        try {
+            Class.forName("org.sqlite.JDBC");
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void disconnect(AutoCloseable obj) {
+        try {
+            obj.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Override
+    public String getNicknameByLoginAndPassword(String login, String password) {
+        try {
+            connection = DriverManager.getConnection("jdbc:sqlite:chatDB.sqlite");
+            preparedStatement = connection.prepareStatement("select nickname from users where login = ? and password = ?");
+
+            preparedStatement.setString(1, login);
+            preparedStatement.setString(2, password);
+
+            ResultSet rs = preparedStatement.executeQuery();
+
+            if (rs.next())
+                return rs.getString("nickname");
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            disconnect(preparedStatement);
+            disconnect(connection);
+        }
+
+        return null;
+    }
+}
+
+// changes from Server.java
+- authService = new SimpleAuthService();
++ authService = new DBAuthService();
