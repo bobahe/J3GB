@@ -1,0 +1,107 @@
+// History.java
+package com.geekbrains.client;
+
+import java.io.*;
+
+public class History {
+
+    public boolean save(String s, String login) {
+        String filename = "history_" + login + ".txt";
+
+        File file = new File(filename);
+
+        if (!file.exists()) {
+            try {
+                file.createNewFile();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+
+
+        try (PrintWriter printWriter = new PrintWriter(new FileOutputStream(file, true))) {
+            printWriter.println(s);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return false;
+    }
+
+    public StringBuilder loadHistory(String login, int lines) {
+        String filename = "history_" + login + ".txt";
+
+        StringBuilder stringBuilder = new StringBuilder(lines * 50);
+
+        try (BufferedReader bufferedReader = new BufferedReader(new FileReader(filename))) {
+            String[] lastLines = new String[lines];
+            int counter = 0;
+            String line = null;
+
+            while ((line = bufferedReader.readLine()) != null) {
+                lastLines[counter % lines] = line;
+                counter++;
+            }
+
+            int startPos = (counter - lines) < 0 ? 0 : counter - lines;
+
+            for (int i = startPos; i < counter; i++) {
+                stringBuilder.append(lastLines[i % lines]);
+                stringBuilder.append(System.getProperty("line.separator"));
+            }
+        } catch (IOException e) {
+            return stringBuilder;
+        }
+
+        return stringBuilder;
+    }
+}
+
+
+// Controller.java
+    ...
+    private String login;
+    private History history;
+    ...
+
+public void setAuthenticated(boolean authenticated) {
+    ...
+    if (!authenticated) {
+        login = "";
+        ...
+    } else {
+        textArea.appendText(history.loadHistory(login, 100).toString());
+    }
+}
+
+...
+@Override
+public void initialize(URL location, ResourceBundle resources) {
+    ...
+    history = new History();
+}
+
+...
+public void sendAuth() {
+    ...
+    login = loginField.getText();
+    ...
+}
+
+...
+public void linkCallbacks() {
+    ...
+
+    Network.setCallOnMsgReceived(args -> {
+        ...
+        if (msg.startsWith("/")) {
+            ...
+        } else {
+            ...
+
+            new Thread(() -> {
+                history.save(msg, login);
+            }).start();
+        }
+    });
+}
