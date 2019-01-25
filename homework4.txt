@@ -1,0 +1,49 @@
+// 1 task
+// MainApp.java
+public class MainApp {
+    public static void main(String[] args) {
+        new Thread(new LetterPrinter('A')).start();
+        new Thread(new LetterPrinter('B')).start();
+        new Thread(new LetterPrinter('C')).start();
+    }
+}
+
+// LetterPrinter.java
+public class LetterPrinter implements Runnable {
+    private static Object lock = new Object();
+    private static volatile char nextCharacter = 'A';
+    private char letter;
+
+    public LetterPrinter(char letter) {
+        this.letter = letter;
+    }
+
+    @Override
+    public void run() {
+        for (int i = 0; i < 5; i++) {
+            synchronized (lock) {
+                while (nextCharacter != letter) {
+                    try {
+                        lock.wait();
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                }
+                System.out.print(letter);
+
+                if (letter >= 'C') {
+                    nextCharacter = 'A';
+                } else {
+                    nextCharacter++;
+                }
+
+                lock.notifyAll();
+            }
+        }
+    }
+}
+
+// 2 task
+// Не понимаю, где в серверной части чата может пригодится ExecutorService. Потоки же создаются только при подключении
+// пользователя и время их выполнения не ограничено. Получается, что можно использовать только CachedThreadPool?
+// Действительно ли в данном случае, как Вы сказали, это "десятое колесо"?
