@@ -1,0 +1,103 @@
+// MainClass.java
+package ru.geekbrains.homework5;
+
+import java.util.concurrent.CountDownLatch;
+
+public class MainClass {
+    ...
+    public static CountDownLatch cdl  = new CountDownLatch(CARS_COUNT);
+
+    public static void main(String[] args) {
+        ...
+
+        try {
+            cdl.await();
+            System.out.println("ВАЖНОЕ ОБЪЯВЛЕНИЕ >>> Гонка началась!!!");
+
+            cdl = new CountDownLatch(CARS_COUNT);
+            System.out.println("AND THE WINNER IS >>> " + race.getFirstPosition().take().getName());
+
+            cdl.await();
+            System.out.println("ВАЖНОЕ ОБЪЯВЛЕНИЕ >>> Гонка закончилась!!!");
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
+}
+
+// Car.java
+package ru.geekbrains.homework5;
+
+public class Car implements Runnable {
+    ...
+    @Override
+    public void run() {
+        try {
+            ...
+            MainClass.cdl.countDown();
+            race.getStartLine().await();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        ...
+
+        MainClass.cdl.countDown();
+
+        race.getFirstPosition().offer(this);
+    }
+}
+
+// Race.java
+package ru.geekbrains.homework5;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.CyclicBarrier;
+
+public class Race {
+    ...
+    private CyclicBarrier startLine = new CyclicBarrier(MainClass.CARS_COUNT);
+    private ArrayBlockingQueue<Car> firstPosition = new ArrayBlockingQueue<>(1);
+
+    ...
+
+    public CyclicBarrier getStartLine() {
+        return this.startLine;
+    }
+
+    public ArrayBlockingQueue<Car> getFirstPosition() {
+        return this.firstPosition;
+    }
+}
+
+// Tunnel.java
+package ru.geekbrains.homework5;
+
+import java.util.concurrent.Semaphore;
+
+public class Tunnel extends Stage {
+    private Semaphore tunnelTrafficLights = new Semaphore(MainClass.CARS_COUNT / 2);
+
+    ...
+
+    @Override
+    public void go(Car c) {
+        try {
+            try {
+                System.out.println(c.getName() + " готовится к этапу(ждет): " + description);
+                tunnelTrafficLights.acquire();
+                System.out.println(c.getName() + " начал этап: " + description);
+                Thread.sleep(length / c.getSpeed() * 1000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            } finally {
+                System.out.println(c.getName() + " закончил этап: " + description);
+                tunnelTrafficLights.release();
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+}
