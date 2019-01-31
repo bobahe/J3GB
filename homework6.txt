@@ -111,3 +111,47 @@ public class Task2Tests {
         Assert.assertEquals(true, Main.checkArrayForOneOrFour(new int[]{2, 3, 4, 5, 6, 6, 7, 4, 1, 8, 234}));
     }
 }
+
+// Task 3
+//
+// logging.properties
+# Отключение хендлеров у корневого логгера
+handlers =
+
+# Установка глобального уровня логгирования
+.level= INFO
+
+# Настройка FileHandler
+java.util.logging.FileHandler.pattern = logs/server%g.log
+java.util.logging.FileHandler.append = true
+java.util.logging.FileHandler.limit = 50000
+java.util.logging.FileHandler.count = 5
+java.util.logging.FileHandler.formatter = java.util.logging.XMLFormatter
+
+# Настройка собственных логгеров
+com.geekbrains.server.Server.level = INFO
+com.geekbrains.server.Server.handlers = java.util.logging.FileHandler
+com.geekbrains.server.ClientHandler.level = INFO
+com.geekbrains.server.ClientHandler.handlers = java.util.logging.FileHandler
+
+// MainServer.java
+package com.geekbrains.server;
+
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.util.logging.LogManager;
+
+public class MainServer {
+    public static void main(String[] args) {
+        LogManager logManager = LogManager.getLogManager();
+        try {
+            logManager.readConfiguration(new FileInputStream("logging.properties"));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        new Server();
+    }
+}
+
+// Дальше просто добавлены поля в классы Server и ClientHandler и логгирование (logger.log()), где попало или где необходимо
