@@ -1,0 +1,113 @@
+// Task 1 and 2 imlimentation
+import java.util.Arrays;
+import java.util.stream.Collectors;
+
+public class Main {
+    public static void main(String[] args) {
+//        System.out.println(Arrays.stream(getArrayFromLast4(new int[]{1, 2, 4, 4, 2, 3, 4, 1, 7, 4, 1, 2, 1, 7})).boxed().collect(Collectors.toList()));
+//        System.out.println(checkArrayForOneOrFour(new int[] {11, 2, 4, 4, 2, 3, 4, 11, 7, 4, 11, 2, 11, 7}));
+    }
+
+    public static int[] getArrayFromLast4(int[] arr) {
+        if (arr == null || arr.length == 0)
+            throw new RuntimeException("Массив должен быть не null!");
+
+        for (int i = arr.length - 1; i >= 0; i--) {
+            if (arr[i] == 4)
+                return Arrays.copyOfRange(arr, i + 1, arr.length);
+        }
+
+        throw new RuntimeException("В массиве нет ни одной 4.");
+    }
+
+    public static boolean checkArrayForOneOrFour(int[] arr) {
+        if (arr == null)
+            throw new RuntimeException("Массив не должен быть null!");
+
+        boolean oneExists = false;
+        boolean fourExists = false;
+
+        for (int i : arr) {
+            if (i == 1)
+                oneExists = true;
+            if (i == 4)
+                fourExists = true;
+
+            if (oneExists && fourExists)
+                return true;
+        }
+
+        return false;
+    }
+}
+
+// Task 1 tests
+import org.junit.Assert;
+import org.junit.Test;
+
+public class Task1Tests {
+    @Test(expected = RuntimeException.class)
+    public void testGetArrayFromLast4OnNull() {
+        Main.getArrayFromLast4(null);
+    }
+
+    @Test(expected = RuntimeException.class)
+    public void testGetArrayFromLast4Without4() {
+        Main.getArrayFromLast4(new int[]{1, 2, 3, 3, 12});
+    }
+
+    @Test
+    public void testGetArrayFromLast4WithOneLeading4() {
+        Assert.assertArrayEquals(
+                new int[]{1, 2, 43, 42, 2, 3, 41, 1, 7, 454, 1, 2, 1, 7},
+                Main.getArrayFromLast4(new int[]{4, 1, 2, 43, 42, 2, 3, 41, 1, 7, 454, 1, 2, 1, 7})
+        );
+    }
+
+    @Test
+    public void testGetArrayFromLast4WithRandomplaced4() {
+        Assert.assertArrayEquals(
+                new int[]{7, 454, 1, 2, 1, 7},
+                Main.getArrayFromLast4(new int[]{1, 2, 4, 42, 2, 3, 41, 1, 4, 4, 7, 454, 1, 2, 1, 7})
+        );
+    }
+
+    @Test
+    public void testGetArrayFromLast4WithOneTrailing4() {
+        Assert.assertArrayEquals(
+                new int[]{},
+                Main.getArrayFromLast4(new int[]{4, 1, 2, 43, 42, 2, 3, 41, 1, 7, 454, 1, 2, 1, 7, 4})
+        );
+    }
+}
+
+// Task 2 tests
+import org.junit.Assert;
+import org.junit.Test;
+
+public class Task2Tests {
+    @Test(expected = RuntimeException.class)
+    public void testCheckArrayForOneOrFourWithNull() {
+        Main.checkArrayForOneOrFour(null);
+    }
+
+    @Test
+    public void testCheckArrayForOneOrFourWithEmptyArray() {
+        Assert.assertEquals(false, Main.checkArrayForOneOrFour(new int[]{}));
+    }
+
+    @Test
+    public void testCheckArrayForOneOrFourWithOnlyOnes() {
+        Assert.assertEquals(false, Main.checkArrayForOneOrFour(new int[]{1, 2, 3, 5, 6, 1, 7}));
+    }
+
+    @Test
+    public void testCheckArrayForOneOrFourWithOnlyFours() {
+        Assert.assertEquals(false, Main.checkArrayForOneOrFour(new int[]{2, 3, 4, 5, 6, 6, 7, 4}));
+    }
+
+    @Test
+    public void testCheckArrayForOneOrFourWithValidArray() {
+        Assert.assertEquals(true, Main.checkArrayForOneOrFour(new int[]{2, 3, 4, 5, 6, 6, 7, 4, 1, 8, 234}));
+    }
+}
