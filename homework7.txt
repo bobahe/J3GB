@@ -1,0 +1,174 @@
+// BeforeSuite.java
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
+
+@Retention(RetentionPolicy.RUNTIME)
+@Target(ElementType.METHOD)
+public @interface BeforeSuite {
+}
+
+// Test.java
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
+
+@Target(ElementType.METHOD)
+@Retention(RetentionPolicy.RUNTIME)
+public @interface Test {
+    int priority() default 5;
+}
+
+// AfterSuite.java
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
+
+@Retention(RetentionPolicy.RUNTIME)
+@Target(ElementType.METHOD)
+public @interface AfterSuite {
+}
+
+// TestInvoker.java
+import com.sun.istack.internal.NotNull;
+import homework7.gbtest.annotations.AfterSuite;
+import homework7.gbtest.annotations.BeforeSuite;
+import homework7.gbtest.annotations.Test;
+
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Iterator;
+import java.util.List;
+
+public class TestInvoker {
+    private final Class c;
+    private final Object obj;
+    private List<Method> methods;
+
+    public TestInvoker(Class c) {
+        this.c = c;
+        this.methods = Arrays.asList(c.getDeclaredMethods());
+        try {
+            this.obj = c.newInstance();
+        } catch (InstantiationException e) {
+            throw new RuntimeException("Не удалось создать объект класса " + c.getName());
+        } catch (IllegalAccessException e) {
+            throw new RuntimeException("Отсутствует или недоступен конструктор по-умолчанию для класса " + c.getName());
+        }
+    }
+
+    public static void start(Class c) {
+        TestInvoker invoker = new TestInvoker(c);
+        invoker.invokeBeforeSuiteMethod();
+        invoker.invokeTests();
+        invoker.invokeAfterSuiteMethod();
+    }
+
+    private List<Method> getMethodsByAnnotation(Class c) {
+        List<Method> filteredMethods = new ArrayList<>(this.methods.size());
+
+        for (Method m : this.methods) {
+            if (m.isAnnotationPresent(c)) {
+                filteredMethods.add(m);
+            }
+        }
+
+        ((ArrayList<Method>) filteredMethods).trimToSize();
+
+        return filteredMethods;
+    }
+
+
+    private void invokeBeforeSuiteMethod() {
+        checkAndInvokeMethod(getMethodsByAnnotation(BeforeSuite.class));
+    }
+
+    private void invokeTests() {
+        List<Method> testMethods = getMethodsByAnnotation(Test.class);
+
+        int currentPriority = 10;
+
+        while (currentPriority > 0) {
+            for (Method m : testMethods) {
+                int priority = m.getAnnotation(Test.class).priority();
+
+                if (priority > 10)
+                    priority = 10;
+                else if (priority < 1)
+                    priority = 1;
+
+                if (priority == currentPriority) {
+                    try {
+                        m.invoke(this.obj);
+                    } catch (IllegalAccessException e) {
+                        throw new RuntimeException("Методы, используемые для тестов, должны быть public.");
+                    } catch (InvocationTargetException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+
+            currentPriority--;
+        }
+    }
+
+    private void invokeAfterSuiteMethod() {
+        checkAndInvokeMethod(getMethodsByAnnotation(AfterSuite.class));
+    }
+
+    private void checkAndInvokeMethod(@NotNull List<Method> methods) {
+        if (methods.size() <= 1) {
+            Iterator<Method> iterator = methods.iterator();
+            while (iterator.hasNext()) {
+                try {
+                    iterator.next().invoke(this.obj);
+                } catch (IllegalAccessException e) {
+                    throw new RuntimeException("Методы, используемые для тестов, должны быть public.");
+                } catch (InvocationTargetException e) {
+                    e.printStackTrace();
+                }
+            }
+
+            return;
+        }
+
+        throw new RuntimeException("В классе тестов больше одного метода @BeforeSuite.");
+    }
+}
+
+// TestClass.java
+import homework7.gbtest.annotations.AfterSuite;
+import homework7.gbtest.annotations.BeforeSuite;
+import homework7.gbtest.annotations.Test;
+
+public class TestClass {
+    @Test
+    public void test1() {
+        System.out.println("test1 method invoked");
+    }
+
+    @Test(priority = 11)
+    public void test2() {
+        System.out.println("test2 method invoked");
+    }
+
+    @Test(priority = -1)
+    public void test3() {
+        System.out.println("test3 method invoked");
+    }
+
+    @AfterSuite
+    public void afterSuite() {
+        System.out.println("After tests!");
+    }
+
+    @BeforeSuite
+    public void beforeSuite() {
+        System.out.println("Before tests!");
+    }
+}
