@@ -2,6 +2,7 @@
 
 1. Приведённый код перенести в новый проект.
 
+```
 public class MainClass {
     public static final int CARS_COUNT = 4;
     public static void main(String[] args) {
@@ -105,6 +106,7 @@ public class Race {
         this.stages = new ArrayList<>(Arrays.asList(stages));
     }
 }
+```
 
 Организуем гонки:
 
